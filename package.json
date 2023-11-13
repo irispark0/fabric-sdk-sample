@@ -21,8 +21,12 @@
     "author": "Hyperledger",
     "license": "Apache-2.0",
     "dependencies": {
+        "@types/circular-json": "^0.4.0",
+        "circular-json": "^0.5.9",
         "fabric-ca-client": "^2.2.4",
-        "fabric-network": "^2.2.4"
+        "fabric-common": "^2.2.19",
+        "fabric-network": "^2.2.4",
+        "fabric-protos": "^2.2.19"
     },
     "devDependencies": {
         "tslint": "^5.11.0",

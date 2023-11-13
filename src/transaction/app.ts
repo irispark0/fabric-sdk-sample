@@ -3,8 +3,11 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-import { Gateway, GatewayOptions } from 'fabric-network';
+import {Gateway, GatewayOptions, Network} from 'fabric-network';
 import * as path from 'path';
+import * as CircularJSON from 'circular-json';
+import * as common from 'fabric-common';
+import * as common2 from 'fabric-protos';
 import { buildCCPOrg1, buildWallet, prettyJSONString } from '../utils/AppUtil';
 import { buildCAClient, enrollAdmin, registerAndEnrollUser } from '../utils/CAUtil';
 
@@ -80,9 +83,19 @@ async function main() {
             console.log(`*** Result: ${prettyJSONString(result.toString())}`);
 
             // Invoke: UpdateAsset (asset1)
+            // fixme
             console.log('\n--> Submit Transaction: UpdateAsset asset1, change the appraisedValue to 350');
-            await contract.submitTransaction('UpdateAsset', 'asset1', 'blue', '5', 'Tomoko', '350');
+            const tx = contract.createTransaction('UpdateAsset');
+            const txResult = await tx.submit('asset1', 'blue', '5', 'Tomoko', '350');
+            console.log("🔴");
+            console.log(`txId: ${tx.getTransactionId()}`);
+            // console.log("tx: ");
+            // console.log(CircularJSON.stringify(tx));
+            console.log(`result: ${txResult.toString()}`);
             console.log('*** Result: committed');
+
+            console.log("👀 CHECK QSCC !!!");
+            await checkArgsByQscc(network, tx.getTransactionId());
 
             // Query: ReadAsset (asset1)
             console.log('\n--> Evaluate Transaction: ReadAsset, function returns "asset1" attributes');
@@ -114,6 +127,21 @@ async function main() {
     } catch (error) {
         console.error(`******** FAILED to run the application: ${error}`);
     }
+}
+
+async function checkArgsByQscc(network: Network, transactionId: string) {
+    const contract = network.getContract("qscc");
+    const result = await contract.evaluateTransaction("GetTransactionByID", "mychannel", transactionId);
+
+    const BlockDecoder = (common as any).BlockDecoder;
+    const transactionEnvelope = BlockDecoder.decodeTransaction(result).transactionEnvelope;
+    const chaincodeSpec =
+        transactionEnvelope.payload.data.actions[0].payload
+            .chaincode_proposal_payload.input.chaincode_spec;
+    const args = chaincodeSpec.input.args;
+
+    console.log("🟢");
+    console.log(args.toString());
 }
 
 main();
